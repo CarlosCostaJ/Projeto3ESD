@@ -84,6 +84,7 @@ public class CameraExample extends EngineFrame {
     private EquipeRocket adversarios;
     private Camera2D camera;
     private boolean emBatalha = false;
+    private boolean menuPcAberto = false;
     private GuiWindow janelaBatalha;
     private GuiButton botaoAtacar;
     private GuiButton botaoFugir;
@@ -107,10 +108,11 @@ public class CameraExample extends EngineFrame {
         
         obstaculosMapa = new ArrayList<>();
         
+        
         jogador = new Jogador( 
                 new Vector2( limiteDoMundo.width / 2, limiteDoMundo.height / 2 ),
-                new Vector2( 50, 50 ),
-                2000,
+                new Vector2( 46, 64 ),
+                1000,
                 BLUE
         );
         
@@ -133,8 +135,8 @@ public class CameraExample extends EngineFrame {
                 
                 // Define temporariamente a posição e atualiza a HitBox do pokémon
                 p.pos = new Vector2( xSorteado, ySorteado );
-                p.hitBox = new Rectangle( p.pos.x - p.dim.x / 2, p.pos.y - p.dim.y / 2, p.dim.x, p.dim.y );
                 
+                p.reposicionarHitBox();
                 // Verifica se colide com QUALQUER obstáculo já existente na lista (adversário ou outros pokémons)
                 boolean colidiu = false;
                 for ( Molde obstaculo : obstaculosMapa ) {
@@ -168,7 +170,7 @@ public class CameraExample extends EngineFrame {
                 
                 // Define temporariamente a posição e atualiza a HitBox do pokémon
                 a.pos = new Vector2( xSorteado, ySorteado );
-                a.hitBox = new Rectangle( a.pos.x - a.dim.x / 2, a.pos.y - a.dim.y / 2, a.dim.x, a.dim.y );
+                a.reposicionarHitBox();
                 
                 // Verifica se colide com QUALQUER obstáculo já existente na lista (adversário ou outros pokémons)
                 boolean colidiu = false;
@@ -216,14 +218,44 @@ public class CameraExample extends EngineFrame {
     @Override
     public void update( double delta ) {
         
+        
+        if(menuPcAberto){
+            for(Pokemon p: jogador.mochila.pcPokemon){
+                if (this.isMouseButtonPressed( this.MOUSE_BUTTON_LEFT )){
+                    if (CollisionUtils.checkCollisionPointRectangle(this.getMousePositionPoint(), p.hitBox)) {
+                        if(jogador.mochila.time.size()<6){
+                            jogador.mochila.time.addLast(p);
+                            jogador.mochila.pcPokemon.remove(p);
+                        }
+                        System.out.println("Clicou no " + p.nome);
+                    }
+                }
+            }
+        }
+        if ( !emBatalha ) {
+        jogador.update( delta, limiteDoJogador, this, obstaculosMapa);
+        //jogador.update( delta, adversario.hitBox, this );
+        
+        if ( isKeyPressed( KEY_SHIFT ) ) {
+            menuPcAberto = !menuPcAberto;
+            /*for(Pokemon p: jogador.mochila.pcPokemon){
+                if (this.isMouseButtonPressed( this.MOUSE_BUTTON_LEFT )){
+                    if (CollisionUtils.checkCollisionPointRectangle(this.getMousePositionPoint(), p.hitBox)) {
+                        System.out.println("Clicou no " + p.nome);
+                    }
+                }
+            }*/
+            
+        }  
+        
         if(isKeyPressed(KEY_I)){
             showInfo = showInfo * -1;
         }
         
-        
-        if ( !emBatalha ) {
-        jogador.update( delta, limiteDoJogador, this, obstaculosMapa);
-        //jogador.update( delta, adversario.hitBox, this );
+        if( isKeyPressed( KEY_E ) ){
+            jogador.mochila.pcPokemon.add(jogador.mochila.time.getLast());
+            jogador.mochila.time.removeLast();
+        }
         
         if ( isKeyDown( KEY_DELETE ) ) {
             camera.rotation--;
@@ -247,6 +279,9 @@ public class CameraExample extends EngineFrame {
             jogador.pos.y = limiteDoMundo.height / 2;
         }
         
+        
+        
+        
         /*if( CollisionUtils.checkCollisionRectangles(jogador.areaInteracao, adversario.hitBox) == true && isKeyPressed(KEY_SPACE))
         {
             //jogador.update(delta, adversario.hitBox, this, false, adversario);
@@ -259,6 +294,7 @@ public class CameraExample extends EngineFrame {
             for( Adversario a : adversarios.get() ){    
                 if ( isKeyPressed( EngineFrame.KEY_SPACE ) && CollisionUtils.checkCollisionRectangles( jogador.areaInteracao, a.hitBox ) ) {
                     System.out.println("Tocou");
+                    System.out.println(a.dim.y);
                     emBatalha = true;
                     glueBatalha.setVisible( true ); // Mostra a janela de batalha              
                 }
@@ -267,7 +303,6 @@ public class CameraExample extends EngineFrame {
                 if (CollisionUtils.checkCollisionRectangles(jogador.areaInteracao, p.hitBox)){
                     jogador.mochila.capturarPokemon(p);
                     System.out.println("Você pegou o pokémon" + p.nome+"!");
-                    System.out.println(jogador.mochila.time.getLast().nome + " foi pra mochila");
                     obstaculosMapa.remove(p);
                     pokedex.removerPokemon(p);
                     break;
@@ -323,6 +358,104 @@ public class CameraExample extends EngineFrame {
         if(showInfo > 0 ){
             drawInfo();
         }
+            
+        
+        
+ 
+        
+        if (menuPcAberto) {
+            // 1. Fundo da interface do PC
+            fillRectangle(100, 40, getScreenWidth() - 160, getScreenHeight() - 80, new Color(40, 40, 80, 245));
+            drawRectangle(100, 40, getScreenWidth() - 160, getScreenHeight() - 80, Color.YELLOW);
+    
+            // 2. Título
+            setFontSize(22);
+            drawText("PC DE POKÉMON - CAIXA DE ARMAZENAMENTO", 110, 75, Color.WHITE);
+            setFontSize(16);
+            drawText("Pressione SHIFT para fechar", 110, getScreenHeight() - 65, Color.LIGHT_GRAY);
+    
+            // 3. Listar os Pokémon guardados no PC
+            List<Pokemon> listaPc = jogador.mochila.pcPokemon; // Acessa os guardados
+    
+            int xInicialSlot = 155;
+            int yInicialSlot = 130;
+            int iniXSlot = 130;
+            int iniYSlot = 130;
+            int alturaSlot = 64;
+            int larguraSlot = 64;
+            int quantidade = listaPc.size();
+            int colunas = 0;
+            int espacamentoXSlot = 64; // Espaço vertical para cada linha de Pokémon
+            int espacamentoYSlot = 12; // Espaço vertical para cada linha de Pokémon
+            
+            
+            for( int i = 0; i < 6; i++ ) {
+                for ( int j = 0; j < 9; j++ ) {
+                    
+                    fillRectangle( iniXSlot+(larguraSlot*j), iniYSlot+(alturaSlot*i), larguraSlot, alturaSlot, new Color(60, 60, 110));
+                    drawRectangle( iniXSlot+(larguraSlot*j), iniYSlot+(alturaSlot*i), larguraSlot, alturaSlot, Color.LIGHT_GRAY);
+                }
+            }
+            
+            int cont = 0;
+            for( int i = 0; i < 6; i++ ){
+                for( int j = 0; j < 9; j++ ){
+                    if( cont < quantidade ) {
+                        int tempX = larguraSlot*j;
+                        int iniXRelativo = iniXSlot + tempX;
+                        int tempY = alturaSlot*i;
+                        int iniYRelativo = iniYSlot + tempY;
+                        Pokemon p = listaPc.get(cont);                    
+                        p.reposicionarPokemon( iniXRelativo + (larguraSlot/2), iniYRelativo+(alturaSlot/2));
+                        p.reposicionarHitBox();
+                        p.draw(this);
+                        cont++;
+                    }   
+                }
+            }
+                    
+            //fillRectangle(xInicial-25, yInicial-10, (espacamentoX*9)+3, 65, new Color(60, 60, 110));
+                    //drawRectangle(posXItem, yInicial+espacamentoY, 500, 50, Color.LIGHT_GRAY);
+            
+            
+            /*System.out.println(colunas);
+            if (listaPc.isEmpty()) {
+                drawText("O PC está vazio!", iniXSlot, iniYSlot, Color.RED);
+            } else {
+                for (int i = 0; i < listaPc.size(); i++) {
+                    int posXItem = 0;
+                    if( colunas == 3 ){
+                        colunas = 0;
+                        //yInicial += 64;
+                        System.out.println("Entrei aqui!");
+                    }               
+                        posXItem = iniXSlot + (colunas * larguraSlot);
+                    
+                    Pokemon p = listaPc.get(i);
+            
+                    // Caixa de fundo para cada slot de Pokémon no PC
+                    
+                    // --- DESENHAR O SPRITE DO POKÉMON NO MENU ---
+                    if (p.spriteOverworld != null) {
+                             p.reposicionarPokemon( posXItem + 10,  iniYSlot+alturaSlot );
+                             p.draw(this); 
+                             colunas ++;
+                    }
+            
+                    // Escreve as informações do Pokémon ao lado do sprite
+                    /*String textoPokemon = p.nome + " (HP: " + p.hpAtual + "/" + p.hpMaximo + ")";
+                    drawText(textoPokemon, xInicial + 70, posYItem + 30, Color.WHITE);
+                    
+                }
+            }*/
+        }
+        
+        
+        
+        
+        
+        
+        
         //}
         //else {
             glueBatalha.draw(); // Desenha a janela, fundo e botões filhos automaticamente
@@ -379,52 +512,25 @@ public class CameraExample extends EngineFrame {
         int x = 5;
         int y = 510;
         int largura = 85;
-        int tamanhoTime = jogador.mochila.time.size();
-        
-        Image desenho = loadImage("resources/images/zacianOW.png");
-        
-        
-        
-        for( int i = 0; i < tamanhoTime; i++ ) {
-            int larguraRelativa = largura*i;
-            int temp = x+larguraRelativa+1;
-            
-            fillRoundRectangle( temp, y, largura, largura, 10, ColorUtils.fade( DARKGRAY, 0.9) );        
-            drawRoundRectangle( temp, y, largura, largura, 10, BLACK );
-                Pokemon p = jogador.mochila.time.get(i);
-                p.reposicionarPokemon( temp+(largura/2), y+(largura/2) );
+        //int tamanhoTime = jogador.mochila.time.size();        
+        //BACKUP
+        for (int i = 0; i < 6; i++) {
+            int larguraRelativa = largura * i;
+            int temp = y - larguraRelativa;
+
+            fillRoundRectangle(x, temp, largura, largura-0.7, 10, ColorUtils.fade(DARKGRAY, 0.9));
+            if(i+1 == jogador.mochila.time.size()){
+                    drawRoundRectangle(x, temp, largura, largura-0.7, 10, GOLD);
+            } else {
+                drawRoundRectangle(x, temp, largura, largura-0.7, 10, BLACK);
+            }
+            if (i < jogador.mochila.time.size()) {                
+                Pokemon p = jogador.mochila.time.get(i);                
+                p.reposicionarPokemon(x + (largura / 2), temp + (largura / 2));
                 p.draw(this);
-                //desenho.drawImage(desenho, (double)temp+(largura/2), (double)y+(largura/2));
-                drawImage(desenho, (double)(temp+(largura/2))-25 , (double)(y+(largura/2))-15 );
-                //drawImage(desenho, (double)p.dim.x/2 , (double)p.dim.y/2 );
-                //this.pos.x - this.dim.x / 2, this.pos.y - this.dim.y / 2, this.dim.x, this.dim.y
-                    
+                p.reposicionarHitBox();
+            }
         }
-        
-        /*fillRoundRectangle( x+1, y, largura, largura, 10, ColorUtils.fade( DARKGRAY, 0.9) );        
-        drawRoundRectangle( x+1, y, largura, largura, 10, BLACK );
-        if(!jogador.mochila.time.isEmpty()){
-            Pokemon p1 = jogador.mochila.time.get(0);
-            p1.reposicionarPokemon( x+(largura/2), y+(largura/2) );
-            p1.draw(this);
-        
-        }
-        
-        fillRoundRectangle( x+largura+1, y, largura, largura, 10, ColorUtils.fade( DARKGRAY, 0.9) );
-        drawRoundRectangle( x+largura+1, y, largura, largura, 10, BLACK );
-        
-        fillRoundRectangle( x+(2*largura)+1, y, largura, largura, 10, ColorUtils.fade( DARKGRAY, 0.9) );
-        drawRoundRectangle( x+(2*largura)+1, y, largura, largura, 10, BLACK );
-        
-        fillRoundRectangle( x+(3*largura)+1, y, largura, largura, 10, ColorUtils.fade( DARKGRAY, 0.9) );
-        drawRoundRectangle( x+(3*largura)+1, y, largura, largura, 10, BLACK );
-        
-        fillRoundRectangle( x+(4*largura)+1, y, largura, largura, 10, ColorUtils.fade( DARKGRAY, 0.9) );
-        drawRoundRectangle( x+(4*largura)+1, y, largura, largura, 10, BLACK );
-        
-        fillRoundRectangle( x+(5*largura)+1, y, largura, largura, 10, ColorUtils.fade( DARKGRAY, 0.9) );
-        drawRoundRectangle( x+(5*largura)+1, y, largura, largura, 10, BLACK );*/
-        
     }
     
     private void drawInfo() {

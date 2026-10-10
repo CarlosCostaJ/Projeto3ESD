@@ -21,8 +21,12 @@ package modelos;
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+import br.com.davidbuzatto.jsge.animation.AnimationUtils;
 import br.com.davidbuzatto.jsge.animation.frame.FrameByFrameAnimation;
+import br.com.davidbuzatto.jsge.animation.frame.DrawableAnimationFrame;
+import br.com.davidbuzatto.jsge.animation.frame.ImageAnimationFrame;
 import br.com.davidbuzatto.jsge.animation.frame.SpriteMapAnimationFrame;
+import br.com.davidbuzatto.jsge.animation.tween.TweenAnimationProperties;
 import br.com.davidbuzatto.jsge.core.engine.EngineFrame;
 import br.com.davidbuzatto.jsge.geom.Rectangle;
 import br.com.davidbuzatto.jsge.math.Vector2;
@@ -30,6 +34,7 @@ import java.awt.Color;
 
 import br.com.davidbuzatto.jsge.core.engine.EngineFrame;
 import br.com.davidbuzatto.jsge.geom.Rectangle;
+import static br.com.davidbuzatto.jsge.image.ImageUtils.loadImage;
 import br.com.davidbuzatto.jsge.math.Vector2;
 import java.awt.Color;
 import java.util.List;
@@ -62,6 +67,13 @@ public class Jogador {
     private FrameByFrameAnimation<SpriteMapAnimationFrame> spriteMapBaixo;
     private FrameByFrameAnimation<SpriteMapAnimationFrame> spriteMapEsquerda;
     private FrameByFrameAnimation<SpriteMapAnimationFrame> spriteMapDireita;
+    private boolean spriteParado;
+    private boolean spriteAndandoCima;
+    private boolean spriteAndandoBaixo;
+    private boolean spriteAndandoEsquerda;
+    private boolean spriteAndandoDireita;
+    
+    
     
     
 
@@ -82,6 +94,49 @@ public class Jogador {
         this.hitBox = new Rectangle( this.pos.x - this.dim.x / 2, this.pos.y - this.dim.y / 2, this.dim.x, this.dim.y );
         this.areaInteracao = new Rectangle ( (this.pos.x - this.dim.x )  , (this.pos.y - this.dim.y ) , this.dim.x*2, this.dim.y*2 );
         this.mochila = new Mochila();
+                
+        spriteMapBaixo = new FrameByFrameAnimation<>( 
+            0.2, 
+            AnimationUtils.getSpriteMapAnimationFrameList( 
+                //loadImage( "resources/images/brendan_runing_overworld_Map.png" ), 
+                loadImage( "resources/images/recorte2.png" ), 
+                3, 138/3, 256/4
+            )
+        );
+        
+        spriteMapCima = new FrameByFrameAnimation<>( 
+            0.2, 
+            AnimationUtils.getSpriteMapAnimationFrameList( 
+                //loadImage( "resources/images/brendan_runing_overworld_Map.png" ), 
+                loadImage( "resources/images/recorte2.png" ), 
+                3, 0, 64, 138/3, 256/4
+            )
+        );
+        
+        spriteMapEsquerda = new FrameByFrameAnimation<>( 
+            0.2, 
+            AnimationUtils.getSpriteMapAnimationFrameList( 
+                //loadImage( "resources/images/brendan_runing_overworld_Map.png" ), 
+                loadImage( "resources/images/recorte2.png" ), 
+                3, 0, 128, 138/3, 256/4
+            )
+        );
+        
+        spriteMapDireita = new FrameByFrameAnimation<>( 
+            0.2, 
+            AnimationUtils.getSpriteMapAnimationFrameList( 
+                //loadImage( "resources/images/brendan_runing_overworld_Map.png" ), 
+                loadImage( "resources/images/recorte2.png" ), 
+                3, 0, 192, 138/3, 256/4
+            )
+        );
+        
+        spriteParado = true;
+        spriteAndandoCima = false;
+        spriteAndandoBaixo = false;
+        spriteAndandoEsquerda = false;
+        spriteAndandoDireita = false;
+        
     }
     
     /**
@@ -93,20 +148,48 @@ public class Jogador {
      */
     public void update( double delta, Rectangle boundary, EngineFrame engine, List<Molde> obstaculos ) {
         
+        spriteMapBaixo.update( delta );
+        spriteMapCima.update( delta );
+        spriteMapEsquerda.update( delta );
+        spriteMapDireita.update( delta );
+        
         if ( engine.isKeyDown(EngineFrame.KEY_LEFT ) || engine.isKeyDown(EngineFrame.KEY_A ) ) {
             vel.x = -speed;
+            spriteParado = false;
+            spriteAndandoCima = false;
+            spriteAndandoBaixo = false;
+            spriteAndandoEsquerda = true;
+            spriteAndandoDireita = false;
         } else if ( engine.isKeyDown(EngineFrame.KEY_RIGHT ) || engine.isKeyDown(EngineFrame.KEY_D ) ) {
             vel.x = speed;
-        } else {
-            vel.x = 0;
-        }
-        
-        if ( engine.isKeyDown(EngineFrame.KEY_UP ) || engine.isKeyDown(EngineFrame.KEY_W ) ) {
+            spriteAndandoDireita = true;
+            spriteParado = false;
+            spriteAndandoCima = false;
+            spriteAndandoBaixo = false;
+            spriteAndandoEsquerda = false;
+            spriteAndandoDireita = true;
+        } else if ( engine.isKeyDown(EngineFrame.KEY_UP ) || engine.isKeyDown(EngineFrame.KEY_W ) ) {
             vel.y = -speed;
+            spriteParado = false;
+            spriteAndandoCima = true;
+            spriteAndandoBaixo = false;
+            spriteAndandoEsquerda = false;
+            spriteAndandoDireita = false;
         } else if ( engine.isKeyDown(EngineFrame.KEY_DOWN ) || engine.isKeyDown(EngineFrame.KEY_S ) ) {
             vel.y = speed;
+            spriteParado = false;
+            spriteAndandoCima = false;
+            spriteAndandoBaixo = true;
+            spriteAndandoEsquerda = false;
+            spriteAndandoDireita = false;
         } else {
+            vel.x = 0;
             vel.y = 0;
+            spriteParado = true;
+            spriteAndandoCima = false;
+            spriteAndandoBaixo = false;
+            spriteAndandoEsquerda = false;
+            spriteAndandoDireita = false;
         }
         
         // --- MOVIMENTAÇÃO E COLISÃO NO EIXO X ---
@@ -165,12 +248,25 @@ public class Jogador {
      * @param engine EngineFrame.
      */
     public void draw( EngineFrame engine ) {
-        engine.fillRectangle( pos.x - dim.x / 2, pos.y - dim.y / 2, dim.x, dim.y, color );
-        engine.drawRectangle(pos.x - dim.x / 2, pos.y - dim.y / 2, dim.x, dim.y, EngineFrame.BLACK );
-        engine.drawRectangle( (pos.x - dim.x )  , (pos.y - dim.y ) , dim.x*2, dim.y*2, EngineFrame.BROWN );
+        //engine.fillRectangle( pos.x - dim.x / 2, pos.y - dim.y / 2, dim.x, dim.y, color );
+        //engine.drawRectangle(pos.x - dim.x / 2, pos.y - dim.y / 2, dim.x, dim.y, EngineFrame.BLACK );
+        //engine.drawRectangle( (pos.x - dim.x )  , (pos.y - dim.y ) , dim.x*2, dim.y*2, EngineFrame.BROWN );
         engine.drawRectangle( hitBox.x, hitBox.y, hitBox.width, hitBox.height, EngineFrame.RED );
         
-        engine.drawText( String.valueOf(mochila.time.size()), pos.x - 5, pos.y - 25, EngineFrame.BLACK );
+        //engine.drawText( String.valueOf(mochila.time.size()), pos.x - 5, pos.y - 25, EngineFrame.BLACK );
+        
+        if(spriteAndandoBaixo) {
+            spriteMapBaixo.getCurrentFrame().draw( engine, (pos.x - dim.x / 2), (pos.y - dim.y / 2) );
+        } else if ( spriteAndandoCima ) {
+            spriteMapCima.getCurrentFrame().draw( engine, (pos.x - dim.x / 2), (pos.y - dim.y / 2) );
+        } else if ( spriteAndandoEsquerda ) {
+            spriteMapEsquerda.getCurrentFrame().draw( engine, (pos.x - dim.x / 2), (pos.y - dim.y / 2) );
+        } else if ( spriteAndandoDireita ) {
+            spriteMapDireita.getCurrentFrame().draw( engine, (pos.x - dim.x / 2), (pos.y - dim.y / 2) );
+        } else {
+            spriteMapBaixo.getFrame(1).draw( engine, (pos.x - dim.x / 2), (pos.y - dim.y / 2) );
+        }
+        
     }
     
 }
